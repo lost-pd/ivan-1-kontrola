@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slovesa — Marie</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f5f5f0;
+  color: #1a1a1a;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 2rem 1rem 4rem;
+}
+.wrapper { max-width: 780px; margin: 0 auto; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 0.25rem; }
+.subtitle { font-size: 14px; color: #888; margin-bottom: 2rem; }
+
+/* Progress */
+.progress-wrap {
+  position: sticky; top: 0; z-index: 100;
+  background: #f5f5f0;
+  padding: 0.75rem 0 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0d8;
+}
+.progress-label { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 6px; }
+.progress-label strong { color: #1a1a1a; font-weight: 600; }
+.progress-bar-bg { height: 8px; background: #e0e0d8; border-radius: 99px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius: 99px; width: 0%; transition: width 0.4s ease; }
+
+/* Sections */
+.section { background: #fff; border-radius: 12px; border: 1px solid #e8e8e0; padding: 1.5rem 1.75rem; margin-bottom: 1.5rem; }
+.section-title { font-size: 16px; font-weight: 600; padding-bottom: 0.75rem; margin-bottom: 1.25rem; border-bottom: 2px solid #f0f0e8; display: flex; align-items: center; gap: 8px; }
+.section-title .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.zadani-label { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.25rem 0 0.6rem; }
+.zadani-desc { font-size: 14px; color: #555; margin-bottom: 0.75rem; font-style: italic; }
+.example { font-size: 13px; color: #777; background: #f8f8f4; border-left: 3px solid #d0d0c8; padding: 6px 10px; border-radius: 0 4px 4px 0; margin-bottom: 0.75rem; }
+
+/* Q rows */
+.q-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.q-num { font-size: 13px; color: #aaa; min-width: 22px; flex-shrink: 0; }
+.q-text { flex: 1; font-size: 15px; color: #2a2a2a; min-width: 200px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; }
+
+/* Inputs */
+input[type="text"] {
+  border: 1.5px solid #d8d8d0; border-radius: 6px;
+  padding: 5px 10px; font-size: 14px; font-family: inherit;
+  outline: none; background: #fafaf8; color: #1a1a1a;
+  transition: border-color 0.2s, background 0.2s;
+}
+input[type="text"]:focus { border-color: #aaa; background: #fff; }
+input[type="text"].correct { border-color: #2ecc71; background: #f0fdf4; color: #166534; }
+input[type="text"].wrong { border-color: #e74c3c; background: #fef2f2; color: #991b1b; }
+input[type="text"].narrow { width: 55px; min-width: 55px; }
+input[type="text"].medium { width: 150px; min-width: 100px; }
+input[type="text"].wide { width: 220px; min-width: 140px; }
+input[type="text"].num-input { width: 80px; min-width: 80px; text-align: center; }
+
+/* Hint button */
+.hint-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #e8e8e0; border: none; cursor: pointer;
+  font-size: 11px; color: #666; font-weight: 700;
+  flex-shrink: 0; transition: background 0.15s;
+  position: relative;
+}
+.hint-btn:hover { background: #d0d0c8; }
+.hint-popup {
+  display: none; position: absolute; left: 26px; top: -4px;
+  background: #2c3e50; color: #fff; font-size: 12px;
+  padding: 5px 10px; border-radius: 6px; white-space: nowrap;
+  z-index: 200; pointer-events: none;
+}
+.hint-btn:hover .hint-popup,
+.hint-btn.active .hint-popup { display: block; }
+
+/* Se position exercise */
+.se-sentence { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0; font-size: 15px; }
+.se-word { white-space: nowrap; }
+.se-slot { display: inline-block; margin: 0 2px; }
+.se-slot input {
+  width: 42px; min-width: 42px; padding: 3px 4px;
+  font-size: 13px; text-align: center;
+}
+
+/* Radio / select for se/si */
+.choice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.choice-btn {
+  padding: 4px 14px; border-radius: 20px; border: 1.5px solid #d8d8d0;
+  background: #fafaf8; cursor: pointer; font-size: 14px; font-family: inherit;
+  transition: all 0.15s;
+}
+.choice-btn:hover { border-color: #aaa; }
+.choice-btn.selected { border-color: #2980b9; background: #ebf5fb; color: #1a5276; }
+.choice-btn.correct-choice { border-color: #2ecc71; background: #f0fdf4; color: #166534; }
+.choice-btn.wrong-choice { border-color: #e74c3c; background: #fef2f2; color: #991b1b; }
+
+/* Rád */
+.rad-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.gender-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 13px; flex-shrink: 0; font-weight: 700;
+}
+.m { background: #d6eaf8; color: #1a5276; }
+.f { background: #fde8f0; color: #7b1f4a; }
+.mf { background: #e8f8e8; color: #1a5e1a; }
+.ff { background: #fef0e0; color: #7b4a1a; }
+
+/* Numbers */
+.num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 0.75rem; }
+.num-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.num-label { font-size: 13px; color: #888; font-weight: 600; }
+.random-btn {
+  background: #2c3e50; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 18px; cursor: pointer; font-size: 14px; font-family: inherit;
+  margin-top: 1rem; transition: background 0.15s;
+}
+.random-btn:hover { background: #1a252f; }
+.random-nums-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<h1>Slovesa — procvičování</h1>
+<p class="subtitle">Časování · Se/si · Rád · Čísla</p>
+
+<div class="progress-wrap">
+  <div class="progress-label"><span>Прогресс</span><strong id="prog-text">0 / 0 správně</strong></div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill"></div></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- БЛОК 1: ČASOVÁNÍ -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="dot" style="background:#e67e22"></span>
+    Časování sloves — doplňte správný tvar
+  </div>
+  <div class="zadani-desc">Doplňte sloveso v závorce ve správném tvaru. Klikněte na <strong>?</strong> pro nápovědu ke skupině.</div>
+
+  <!-- věta 1: -á -->
+  <div class="q-row">
+    <span class="q-num">1.</span>
+    <span class="q-text">Já mluvím o tom, co <input type="text" class="medium" data-answers="dělám"> (dělat) každý den.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → já dělám</span></button>
+    </span>
+  </div>
+
+  <!-- věta 2: -á -->
+  <div class="q-row">
+    <span class="q-num">2.</span>
+    <span class="q-text">Ty moc dobře <input type="text" class="medium" data-answers="zpíváš"> (zpívat), měl bys jít do soutěže.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → ty zpíváš</span></button>
+    </span>
+  </div>
+
+  <!-- věta 3: -á -->
+  <div class="q-row">
+    <span class="q-num">3.</span>
+    <span class="q-text">Můj bratr často <input type="text" class="medium" data-answers="meškává|meškuje|mešká"> (meškat) do práce kvůli zácpám.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → on mešká</span></button>
+    </span>
+  </div>
+
+  <!-- věta 4: -á -->
+  <div class="q-row">
+    <span class="q-num">4.</span>
+    <span class="q-text">Moje sestra na tebe <input type="text" class="medium" data-answers="čeká"> (čekat) už hodinu před obchodem.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → ona čeká</span></button>
+    </span>
+  </div>
+
+  <!-- věta 5: -í -->
+  <div class="q-row">
+    <span class="q-num">5.</span>
+    <span class="q-text">My v létě plaveme v jezeře, ale raději <input type="text" class="medium" data-answers="odpočíváme"> (odpočívat) na pláži.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → my odpočíváme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 6: -á -->
+  <div class="q-row">
+    <span class="q-num">6.</span>
+    <span class="q-text">Vy už <input type="text" class="medium" data-answers="znáte"> (znát) naši novou kolegyni Annu?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → vy znáte</span></button>
+    </span>
+  </div>
+
+  <!-- věta 7: -uj -->
+  <div class="q-row">
+    <span class="q-num">7.</span>
+    <span class="q-text">Já momentálně <input type="text" class="medium" data-answers="studuji|studuju"> (studovat) ekonomii na Karlově univerzitě.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → já studuji/studuju</span></button>
+    </span>
+  </div>
+
+  <!-- věta 8: -á -->
+  <div class="q-row">
+    <span class="q-num">8.</span>
+    <span class="q-text">Já ti <input type="text" class="medium" data-answers="volám"> (volat) už dvacet minut, proč nebereš telefon?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → já volám</span></button>
+    </span>
+  </div>
+
+  <!-- věta 9: -á -->
+  <div class="q-row">
+    <span class="q-num">9.</span>
+    <span class="q-text">Kam ty <input type="text" class="medium" data-answers="spěcháš"> (spěchat) tak brzy ráno?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → ty spěcháš</span></button>
+    </span>
+  </div>
+
+  <!-- věta 10: -í -->
+  <div class="q-row">
+    <span class="q-num">10.</span>
+    <span class="q-text">Já ti moc dobře <input type="text" class="medium" data-answers="rozumím"> (rozumět), ale nemůžu pomoct.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → já rozumím</span></button>
+    </span>
+  </div>
+
+  <!-- věta 11: -í -->
+  <div class="q-row">
+    <span class="q-num">11.</span>
+    <span class="q-text">Ty skvěle <input type="text" class="medium" data-answers="mluvíš"> (mluvit) česky, kde ses to naučil?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → ty mluvíš</span></button>
+    </span>
+  </div>
+
+  <!-- věta 12: -uj -->
+  <div class="q-row">
+    <span class="q-num">12.</span>
+    <span class="q-text">Kam ty <input type="text" class="medium" data-answers="cestuješ|cestuji"> (cestovat) na letošní letní dovolenou?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → ty cestuješ</span></button>
+    </span>
+  </div>
+
+  <!-- věta 13: -í -->
+  <div class="q-row">
+    <span class="q-num">13.</span>
+    <span class="q-text">Náš šéf dnes <input type="text" class="medium" data-answers="myslí"> (myslet) na dovolenou, ne na rozpočet.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → on myslí</span></button>
+    </span>
+  </div>
+
+  <!-- věta 14: -á -->
+  <div class="q-row">
+    <span class="q-num">14.</span>
+    <span class="q-text">Tento pes nikdy <input type="text" class="medium" data-answers="neštěká"> (neštěkat) na cizí lidi.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → on štěká / neštěká</span></button>
+    </span>
+  </div>
+
+  <!-- věta 15: -uj -->
+  <div class="q-row">
+    <span class="q-num">15.</span>
+    <span class="q-text">Tomáš už tři roky <input type="text" class="medium" data-answers="pracuje"> (pracovat) jako programátor z domova.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → on pracuje</span></button>
+    </span>
+  </div>
+
+  <!-- věta 16: -í -->
+  <div class="q-row">
+    <span class="q-num">16.</span>
+    <span class="q-text">Moje maminka úžasně <input type="text" class="medium" data-answers="vaří"> (vařit) tradiční česká jídla.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → ona vaří</span></button>
+    </span>
+  </div>
+
+  <!-- věta 17: -á -->
+  <div class="q-row">
+    <span class="q-num">17.</span>
+    <span class="q-text">Děti venku <input type="text" class="medium" data-answers="běhají"> (běhat) bosé po trávě.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → oni běhají</span></button>
+    </span>
+  </div>
+
+  <!-- věta 18: -uj -->
+  <div class="q-row">
+    <span class="q-num">18.</span>
+    <span class="q-text">Firma teď rychle <input type="text" class="medium" data-answers="potřebuje"> (potřebovat) nové lidi.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → ona potřebuje</span></button>
+    </span>
+  </div>
+
+  <!-- věta 19: -í -->
+  <div class="q-row">
+    <span class="q-num">19.</span>
+    <span class="q-text">My teď <input type="text" class="medium" data-answers="bydlíme"> (bydlet) v podnájmu kousek od centra Prahy.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → my bydlíme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 20: -á -->
+  <div class="q-row">
+    <span class="q-num">20.</span>
+    <span class="q-text">My zítra <input type="text" class="medium" data-answers="vítáme"> (vítat) hosty z partnerské firmy.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → my vítáme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 21: -uj -->
+  <div class="q-row">
+    <span class="q-num">21.</span>
+    <span class="q-text">My rádi <input type="text" class="medium" data-answers="fotografujeme"> (fotografovat) přírodu během našich výletů.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → my fotografujeme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 22: -í -->
+  <div class="q-row">
+    <span class="q-num">22.</span>
+    <span class="q-text">Proč vy <input type="text" class="medium" data-answers="nemluvíte"> (nemluvit) nahlas, špatně vás slyším?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → vy mluvíte / nemluvíte</span></button>
+    </span>
+  </div>
+
+  <!-- věta 23: -á -->
+  <div class="q-row">
+    <span class="q-num">23.</span>
+    <span class="q-text">Proč vy <input type="text" class="medium" data-answers="nezavíráte"> (nezavírat) dveře, když odcházíte?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → vy zavíráte / nezavíráte</span></button>
+    </span>
+  </div>
+
+  <!-- věta 24: -uj -->
+  <div class="q-row">
+    <span class="q-num">24.</span>
+    <span class="q-text">Jak často vy <input type="text" class="medium" data-answers="nakupujete"> (nakupovat) potraviny přes internet?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → vy nakupujete</span></button>
+    </span>
+  </div>
+
+  <!-- věta 25: -í -->
+  <div class="q-row">
+    <span class="q-num">25.</span>
+    <span class="q-text">Lidé ve městě spěchají a <input type="text" class="medium" data-answers="nemyslí"> (nemyslet) na odpočinek.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → oni myslí / nemyslí</span></button>
+    </span>
+  </div>
+
+  <!-- věta 26: -á -->
+  <div class="q-row">
+    <span class="q-num">26.</span>
+    <span class="q-text">Studenti na konci kurzu <input type="text" class="medium" data-answers="skládají"> (skládat) těžkou zkoušku.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → oni skládají</span></button>
+    </span>
+  </div>
+
+  <!-- věta 27: -uj -->
+  <div class="q-row">
+    <span class="q-num">27.</span>
+    <span class="q-text">Moji rodiče hodně <input type="text" class="medium" data-answers="cestují|cestujou"> (cestovat) po celém světě.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → oni cestují/cestujou</span></button>
+    </span>
+  </div>
+
+  <!-- věta 28: -í -->
+  <div class="q-row">
+    <span class="q-num">28.</span>
+    <span class="q-text">Já každý den <input type="text" class="medium" data-answers="chodím"> (chodit) na procházku do parku se psem.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → já chodím</span></button>
+    </span>
+  </div>
+
+  <!-- věta 29: -uj -->
+  <div class="q-row">
+    <span class="q-num">29.</span>
+    <span class="q-text">Já vám moc <input type="text" class="medium" data-answers="děkuji|děkuju"> (děkovat) za vaši pomoc.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → já děkuji/děkuju</span></button>
+    </span>
+  </div>
+
+  <!-- věta 30: -í -->
+  <div class="q-row">
+    <span class="q-num">30.</span>
+    <span class="q-text">Petr už dlouho <input type="text" class="medium" data-answers="shání"> (shánět) novou práci v IT sektoru.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → on shání</span></button>
+    </span>
+  </div>
+
+  <!-- věta 31: -á -->
+  <div class="q-row">
+    <span class="q-num">31.</span>
+    <span class="q-text">Já s ním naprosto <input type="text" class="medium" data-answers="odmítám"> (odmítat) spolupracovat.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → já odmítám</span></button>
+    </span>
+  </div>
+
+  <!-- věta 32: -uj -->
+  <div class="q-row">
+    <span class="q-num">32.</span>
+    <span class="q-text">Proč ty pořád <input type="text" class="medium" data-answers="telefonuješ"> (telefonovat) a nepracuješ?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → ty telefonuješ</span></button>
+    </span>
+  </div>
+
+  <!-- věta 33: -í -->
+  <div class="q-row">
+    <span class="q-num">33.</span>
+    <span class="q-text">My vás <input type="text" class="medium" data-answers="prosíme"> (prosit) o trpělivost, systém má výpadek.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → my prosíme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 34: -uj -->
+  <div class="q-row">
+    <span class="q-num">34.</span>
+    <span class="q-text">My právě <input type="text" class="medium" data-answers="organizujeme"> (organizovat) schůzku na příští týden.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → my organizujeme</span></button>
+    </span>
+  </div>
+
+  <!-- věta 35: -í -->
+  <div class="q-row">
+    <span class="q-num">35.</span>
+    <span class="q-text">Kam vy <input type="text" class="medium" data-answers="chodíte"> (chodit) v pátek večer s přáteli?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → vy chodíte</span></button>
+    </span>
+  </div>
+
+  <!-- věta 36: -á -->
+  <div class="q-row">
+    <span class="q-num">36.</span>
+    <span class="q-text">Hvězdy v noci krásně svítí a <input type="text" class="medium" data-answers="padají"> (padat).
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -á → oni padají</span></button>
+    </span>
+  </div>
+
+  <!-- věta 37: -uj -->
+  <div class="q-row">
+    <span class="q-num">37.</span>
+    <span class="q-text">Co přesně vy <input type="text" class="medium" data-answers="studujete"> (studovat) na té vysoké škole?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → vy studujete</span></button>
+    </span>
+  </div>
+
+  <!-- věta 38: -í -->
+  <div class="q-row">
+    <span class="q-num">38.</span>
+    <span class="q-text">Sousedé nad námi strašně <input type="text" class="medium" data-answers="křičí"> (křičet), nedá se u toho spát.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → oni křičí</span></button>
+    </span>
+  </div>
+
+  <!-- věta 39: -uj -->
+  <div class="q-row">
+    <span class="q-num">39.</span>
+    <span class="q-text">Vědci v laboratoři <input type="text" class="medium" data-answers="analyzují|analyzujou"> (analyzovat) nové vzorky krve.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → oni analyzují/analyzujou</span></button>
+    </span>
+  </div>
+
+  <!-- věta 40: -í -->
+  <div class="q-row">
+    <span class="q-num">40.</span>
+    <span class="q-text">Já už na tom projektu nepracuji, <input type="text" class="medium" data-answers="myslím"> (myslet) na jiné věci.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → já myslím</span></button>
+    </span>
+  </div>
+
+  <!-- věta 41: -á -->
+  <div class="q-row">
+    <span class="q-num">41.</span>
+    <span class="q-text">Já nerad <input type="text" class="medium" data-answers="riskuji|riskuju"> (riskovat), raději mám jistotu.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → já riskuji/riskuju</span></button>
+    </span>
+  </div>
+
+  <!-- věta 42: -í -->
+  <div class="q-row">
+    <span class="q-num">42.</span>
+    <span class="q-text">Tato auta <input type="text" class="medium" data-answers="patří"> (patřit) naší rodinné firmě.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → ona patří</span></button>
+    </span>
+  </div>
+
+  <!-- věta 43: -uj -->
+  <div class="q-row">
+    <span class="q-num">43.</span>
+    <span class="q-text">Náš pes venku radostně <input type="text" class="medium" data-answers="tancuje"> (tancovat), když vidí sníh.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → on tancuje</span></button>
+    </span>
+  </div>
+
+  <!-- věta 44: -í -->
+  <div class="q-row">
+    <span class="q-num">44.</span>
+    <span class="q-text">Ty ještě <input type="text" class="medium" data-answers="nerozumíš"> (nerozumět) tomuto gramatickému pravidlu?
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -í → ty rozumíš / nerozumíš</span></button>
+    </span>
+  </div>
+
+  <!-- věta 45: -uj -->
+  <div class="q-row">
+    <span class="q-num">45.</span>
+    <span class="q-text">Děti rády <input type="text" class="medium" data-answers="malují|malujou"> (malovat) pastelkami na velký papír.
+      <button class="hint-btn" onclick="toggleHint(this)">?<span class="hint-popup">skupina -uj → oni malují/malujou</span></button>
+    </span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- БЛОК 2: SE NA 2. POZICI -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="dot" style="background:#8e44ad"></span>
+    Klitika SE — vložte na správnou pozici
+  </div>
+  <div class="zadani-desc">Do které mezery patří <strong>se</strong>? Vepište <em>se</em> do správného políčka. Ostatní nechte prázdná.</div>
+  <div class="example">Příklad: Ráno / ___ / myju. → do druhé mezery: <strong>se</strong></div>
+
+  <div id="se-exercise"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- БЛОК 3: SE nebo SI -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="dot" style="background:#16a085"></span>
+    SE nebo SI?
+  </div>
+  <div class="zadani-desc">Vyberte správnou klitiku. Klikněte na <strong>?</strong> pro překlad a nápovědu.</div>
+
+  <div id="sesi-exercise"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- БЛОК 4: RÁD/A/I/Y -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="dot" style="background:#c0392b"></span>
+    Rád / ráda / rádi / rády
+  </div>
+  <div class="zadani-desc">Doplňte správný tvar slova <strong>rád</strong>.</div>
+
+  <div id="rad-exercise"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- БЛОК 5: ČÍSLA -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="dot" style="background:#2980b9"></span>
+    Čísla
+  </div>
+
+  <div class="zadani-label">Úroveň 1 — čísla 1 až 10</div>
+  <div class="zadani-desc">Napište čísla slovně.</div>
+  <div class="num-grid" id="nums-1-10"></div>
+
+  <div class="zadani-label" style="margin-top:1.5rem">Úroveň 2 — čísla 11 až 99</div>
+  <div class="zadani-desc">Napište čísla slovně. Klikněte na tlačítko pro nová náhodná čísla.</div>
+  <button class="random-btn" onclick="generateRandom()">🔀 Nová čísla</button>
+  <div class="random-nums-grid" id="nums-random"></div>
+</div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ─── DATA ───────────────────────────────────────
+
+const seSentences = [
+  { words: ["Ráno", "rychle", "myju", "a", "oblékám."], pos: 1, hint: "se stojí za prvním slovem (Ráno)" },
+  { words: ["Petr", "každý", "den", "holí", "před", "prací."], pos: 1, hint: "se stojí za prvním slovem (Petr)" },
+  { words: ["Jak", "jmenuješ?"], pos: 1, hint: "se stojí za prvním slovem (Jak)" },
+  { words: ["My", "v", "létě", "koupeme", "v", "jezeře."], pos: 1, hint: "se stojí za prvním slovem (My)" },
+  { words: ["Proč", "ty", "tak", "moc", "nudíš", "doma?"], pos: 2, hint: "se stojí za druhým slovem (ty) — zájmeno je první celek" },
+  { words: ["Jana", "a", "Pavel", "spolu", "učí", "česky."], pos: 3, hint: "se stojí za třetím slovem — 'Jana a Pavel' je první celek" },
+  { words: ["Já", "vždy", "před", "spaním", "sprchuju."], pos: 1, hint: "se stojí za prvním slovem (Já)" },
+  { words: ["Dnes", "večer", "potkáme", "u", "kina."], pos: 1, hint: "se stojí za prvním slovem (Dnes)" },
+  { words: ["Ty", "každé", "ráno", "tak", "dlouho", "líčíš?"], pos: 1, hint: "se stojí za prvním slovem (Ty)" },
+  { words: ["Proč", "vy", "takhle", "chováte", "k", "hostům?"], pos: 2, hint: "se stojí za druhým slovem (vy)" },
+  { words: ["V", "neděli", "obvykle", "procházíme", "v", "parku."], pos: 2, hint: "se stojí za druhým slovem — 'V neděli' je první celek" },
+  { words: ["Tomáš", "vždy", "usmívá,", "když", "vidí", "kamarády."], pos: 1, hint: "se stojí za prvním slovem (Tomáš)" },
+  { words: ["Já", "na", "tomto", "kurzu", "hodně", "učím."], pos: 1, hint: "se stojí za prvním slovem (Já)" },
+  { words: ["Vy", "spolu", "každý", "týden", "setkáváte?"], pos: 1, hint: "se stojí za prvním slovem (Vy)" },
+  { words: ["Každý", "den", "trochu", "učím", "a", "zlepšuji."], pos: 2, hint: "se stojí za druhým slovem — 'Každý den' je první celek" },
+];
+
+const sesiData = [
+  { sentence: "Jak ___ jmenuješ?", answer: "se", hint_uk: "як тебе звуть? — jmenovat se (про себе, не власність)", hint_ru: "как тебя зовут? — jmenovat se (о себе, не владение)" },
+  { sentence: "Koupím ___ nové boty, jsou super.", answer: "si", hint_uk: "куплю собі — взяти для себе (власність)", hint_ru: "куплю себе — взять для себя (владение)" },
+  { sentence: "Ráno ___ myju zuby.", answer: "si", hint_uk: "чищу собі зуби — частина тіла (свого)", hint_ru: "чищу себе зубы — часть тела (своё)" },
+  { sentence: "Petr ___ každý den holí.", answer: "se", hint_uk: "голиться — holit se (дія над собою)", hint_ru: "бреется — holit se (действие над собой)" },
+  { sentence: "Dáš ___ kávu nebo čaj?", answer: "si", hint_uk: "візьмеш собі — dát si (взяти для себе)", hint_ru: "возьмешь себе — dát si (взять для себя)" },
+  { sentence: "Tomáš a Jana spolu ___ píšou každý den.", answer: "si", hint_uk: "пишуть один одному — psát si (взаємна дія)", hint_ru: "пишут друг другу — psát si (взаимное действие)" },
+  { sentence: "Proč ___ nestěžuješ, když ti to vadí?", answer: "si", hint_uk: "не скаржишся — stěžovat si (на щось)", hint_ru: "не жалуешься — stěžovat si (на что-то)" },
+  { sentence: "My ___ moc dobře rozumíme.", answer: "si", hint_uk: "розуміємо одне одного — rozumět si (взаємно)", hint_ru: "понимаем друг друга — rozumět si (взаимно)" },
+  { sentence: "Vezmu ___ deštník, vypadá to na déšť.", answer: "si", hint_uk: "візьму собі — vzít si (взяти для себе)", hint_ru: "возьму себе — vzít si (взять для себя)" },
+  { sentence: "Děti ___ hrají na zahradě celé odpoledne.", answer: "si", hint_uk: "грають (для задоволення) — hrát si", hint_ru: "играют (для удовольствия) — hrát si" },
+];
+
+const radData = [
+  { sentence: "Pavel ___ sportuje každý víkend.", answer: "rád", gender: "m", label: "♂ Pavel" },
+  { sentence: "Moje maminka ___ vaří česká jídla.", answer: "ráda", gender: "f", label: "♀ maminka" },
+  { sentence: "Tomáš a Jana ___ cestují po Evropě.", answer: "rádi", gender: "mf", label: "♂♀ Tomáš + Jana" },
+  { sentence: "Petra a Klára ___ nakupují oblečení.", answer: "rády", gender: "ff", label: "♀♀ Petra + Klára" },
+  { sentence: "Já ___ poslouchám hudbu večer.", answer: "rád", gender: "m", label: "♂ já" },
+  { sentence: "Ty ___ čteš knihy před spaním?", answer: "ráda", gender: "f", label: "♀ ty" },
+  { sentence: "My ___ hrajeme fotbal v parku.", answer: "rádi", gender: "mf", label: "♂♂ my" },
+  { sentence: "Naše učitelka ___ mluví o cestování.", answer: "ráda", gender: "f", label: "♀ učitelka" },
+  { sentence: "Vy ___ pracujete z domova?", answer: "rádi", gender: "mf", label: "♂♀ vy" },
+  { sentence: "Holky ze třídy ___ zpívají spolu.", answer: "rády", gender: "ff", label: "♀♀ holky" },
+];
+
+const nums1to10 = [
+  [1,"jedna"],[2,"dva|dvě"],[3,"tři"],[4,"čtyři"],[5,"pět"],
+  [6,"šest"],[7,"sedm"],[8,"osm"],[9,"devět"],[10,"deset"]
+];
+
+// ─── BUILD SE EXERCISE ───────────────────────────
+function buildSe() {
+  const container = document.getElementById('se-exercise');
+  seSentences.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:baseline;gap:4px;margin-bottom:12px;flex-wrap:wrap;';
+
+    const num = document.createElement('span');
+    num.className = 'q-num';
+    num.textContent = (idx + 1) + '.';
+    div.appendChild(num);
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'flex:1;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;font-size:15px;';
+
+    item.words.forEach((word, wi) => {
+      // slot before this word
+      const slot = document.createElement('span');
+      slot.className = 'se-slot';
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'narrow';
+      inp.style.cssText = 'width:38px;min-width:38px;padding:3px 4px;font-size:12px;text-align:center;';
+      inp.dataset.correctPos = item.pos;
+      inp.dataset.slotPos = wi;
+      inp.dataset.hint = item.hint;
+      inp.addEventListener('blur', () => checkSeSlot(inp, item, idx));
+      slot.appendChild(inp);
+      wrap.appendChild(slot);
+
+      const wordSpan = document.createElement('span');
+      wordSpan.textContent = word + ' ';
+      wrap.appendChild(wordSpan);
+    });
+
+    const hb = document.createElement('button');
+    hb.className = 'hint-btn';
+    hb.onclick = function(){ toggleHint(this); };
+    hb.innerHTML = '?<span class="hint-popup">' + item.hint + '</span>';
+    wrap.appendChild(hb);
+
+    div.appendChild(wrap);
+    container.appendChild(div);
+  });
+}
+
+function checkSeSlot(inp, item, sentenceIdx) {
+  const val = inp.value.trim().toLowerCase();
+  const slotPos = parseInt(inp.dataset.slotPos);
+  const correctPos = item.pos;
+
+  if (!val) { inp.classList.remove('correct','wrong'); updateProgress(); return; }
+
+  // This slot is correct position AND value is 'se'
+  if (slotPos === correctPos && val === 'se') {
+    inp.classList.add('correct'); inp.classList.remove('wrong');
+  } else if (val !== '' && val !== 'se') {
+    inp.classList.add('wrong'); inp.classList.remove('correct');
+  } else if (slotPos !== correctPos && val === 'se') {
+    inp.classList.add('wrong'); inp.classList.remove('correct');
+  } else {
+    inp.classList.remove('correct','wrong');
+  }
+  updateProgress();
+}
+
+// ─── BUILD SE/SI ─────────────────────────────────
+function buildSesi() {
+  const container = document.getElementById('sesi-exercise');
+  sesiData.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'margin-bottom:14px;';
+
+    const top = document.createElement('div');
+    top.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;';
+
+    const num = document.createElement('span');
+    num.className = 'q-num';
+    num.textContent = (idx+1) + '.';
+    top.appendChild(num);
+
+    const txt = document.createElement('span');
+    txt.style.cssText = 'font-size:15px;flex:1;';
+    txt.textContent = item.sentence;
+    top.appendChild(txt);
+
+    const hb = document.createElement('button');
+    hb.className = 'hint-btn';
+    hb.onclick = function(){ toggleHint(this); };
+    hb.innerHTML = '?<span class="hint-popup" style="white-space:normal;max-width:220px;">🇺🇦 ' + item.hint_uk + '<br>🇷🇺 ' + item.hint_ru + '</span>';
+    top.appendChild(hb);
+    row.appendChild(top);
+
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:8px;padding-left:30px;';
+
+    ['se','si'].forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = opt;
+      btn.dataset.answer = item.answer;
+      btn.dataset.value = opt;
+      btn.onclick = function() { selectSesi(this, btns, item.answer); };
+      btns.appendChild(btn);
+    });
+
+    row.appendChild(btns);
+    container.appendChild(row);
+  });
+}
+
+function selectSesi(btn, container, correct) {
+  container.querySelectorAll('.choice-btn').forEach(b => {
+    b.classList.remove('selected','correct-choice','wrong-choice');
+  });
+  btn.classList.add('selected');
+  if (btn.dataset.value === correct) {
+    btn.classList.add('correct-choice');
+  } else {
+    btn.classList.add('wrong-choice');
+    container.querySelectorAll('.choice-btn').forEach(b => {
+      if (b.dataset.value === correct) b.classList.add('correct-choice');
+    });
+  }
+  updateProgress();
+}
+
+// ─── BUILD RÁD ───────────────────────────────────
+function buildRad() {
+  const container = document.getElementById('rad-exercise');
+  radData.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'q-row';
+
+    const num = document.createElement('span');
+    num.className = 'q-num';
+    num.textContent = (idx+1) + '.';
+    row.appendChild(num);
+
+    const genderClass = {m:'m',f:'f',mf:'mf',ff:'ff'}[item.gender];
+    const badge = document.createElement('span');
+    badge.className = 'gender-badge ' + genderClass;
+    badge.textContent = item.gender === 'm' ? '♂' : item.gender === 'f' ? '♀' : item.gender === 'mf' ? '♂♀' : '♀♀';
+    badge.title = item.label;
+    row.appendChild(badge);
+
+    const txt = document.createElement('span');
+    txt.style.cssText = 'font-size:15px;flex:1;';
+
+    const parts = item.sentence.split('___');
+    txt.appendChild(document.createTextNode(parts[0]));
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'medium';
+    inp.style.width = '90px';
+    inp.dataset.answers = item.answer;
+    inp.addEventListener('blur', () => { checkInput(inp); updateProgress(); });
+    txt.appendChild(inp);
+    txt.appendChild(document.createTextNode(parts[1]));
+    row.appendChild(txt);
+
+    container.appendChild(row);
+  });
+}
+
+// ─── BUILD NUMBERS ───────────────────────────────
+function buildNums1to10() {
+  const grid = document.getElementById('nums-1-10');
+  nums1to10.forEach(([n, ans]) => {
+    const cell = document.createElement('div');
+    cell.className = 'num-cell';
+    const label = document.createElement('div');
+    label.className = 'num-label';
+    label.textContent = n;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'num-input';
+    inp.dataset.answers = ans;
+    inp.addEventListener('blur', () => { checkInput(inp); updateProgress(); });
+    cell.appendChild(label);
+    cell.appendChild(inp);
+    grid.appendChild(cell);
+  });
+}
+
+const randomAnswers = [
+  [11,"jedenáct"],[12,"dvanáct"],[13,"třináct"],[14,"čtrnáct"],[15,"patnáct"],
+  [16,"šestnáct"],[17,"sedmnáct"],[18,"osmnáct"],[19,"devatenáct"],[20,"dvacet"],
+  [21,"dvacet jedna|dvacet jeden"],[22,"dvacet dva|dvacet dvě"],[23,"dvacet tři"],
+  [24,"dvacet čtyři"],[25,"dvacet pět"],[26,"dvacet šest"],[27,"dvacet sedm"],
+  [28,"dvacet osm"],[29,"dvacet devět"],[30,"třicet"],[31,"třicet jedna|třicet jeden"],
+  [32,"třicet dva|třicet dvě"],[33,"třicet tři"],[34,"třicet čtyři"],[35,"třicet pět"],
+  [40,"čtyřicet"],[41,"čtyřicet jedna"],[42,"čtyřicet dva"],[45,"čtyřicet pět"],
+  [50,"padesát"],[55,"padesát pět"],[60,"šedesát"],[61,"šedesát jedna"],
+  [70,"sedmdesát"],[72,"sedmdesát dva"],[75,"sedmdesát pět"],[80,"osmdesát"],
+  [81,"osmdesát jedna"],[88,"osmdesát osm"],[90,"devadesát"],[95,"devadesát pět"],
+  [99,"devadesát devět"]
+];
+
+function generateRandom() {
+  const grid = document.getElementById('nums-random');
+  grid.innerHTML = '';
+  const shuffled = [...randomAnswers].sort(() => Math.random()-0.5).slice(0,10);
+  shuffled.forEach(([n, ans]) => {
+    const cell = document.createElement('div');
+    cell.className = 'num-cell';
+    const label = document.createElement('div');
+    label.className = 'num-label';
+    label.textContent = n;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'num-input';
+    inp.dataset.answers = ans;
+    inp.addEventListener('blur', () => { checkInput(inp); updateProgress(); });
+    cell.appendChild(label);
+    cell.appendChild(inp);
+    grid.appendChild(cell);
+  });
+}
+
+// ─── CHECKING ────────────────────────────────────
+function normalize(str) {
+  return str.trim().toLowerCase().replace(/\s+/g,' ').replace(/[.?!]$/,'');
+}
+
+function checkInput(inp) {
+  const val = inp.value;
+  if (!val.trim()) { inp.classList.remove('correct','wrong'); return; }
+  const answers = inp.dataset.answers.split('|').map(a => normalize(a));
+  const ok = answers.includes(normalize(val));
+  inp.classList.toggle('correct', ok);
+  inp.classList.toggle('wrong', !ok);
+}
+
+function toggleHint(btn) {
+  btn.classList.toggle('active');
+}
+
+// ─── PROGRESS ────────────────────────────────────
+function updateProgress() {
+  // Count text inputs
+  const textInputs = document.querySelectorAll('input[type="text"]');
+  let total = textInputs.length;
+  let correct = 0;
+  textInputs.forEach(inp => {
+    if (inp.classList.contains('correct')) correct++;
+  });
+  // Count se/si choices (10 items, each answered = 1)
+  const sesiRows = document.querySelectorAll('#sesi-exercise .choice-btn.correct-choice, #sesi-exercise .choice-btn.wrong-choice');
+  const sesiAnswered = document.querySelectorAll('#sesi-exercise .choice-btn.selected').length;
+  const sesiCorrect = document.querySelectorAll('#sesi-exercise .choice-btn.correct-choice.selected').length;
+  total += sesiData.length;
+  correct += sesiCorrect;
+
+  const pct = total > 0 ? Math.round((correct/total)*100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = correct + ' / ' + total + ' správně';
+}
+
+// ─── INIT ─────────────────────────────────────────
+buildSe();
+buildSesi();
+buildRad();
+buildNums1to10();
+generateRandom();
+updateProgress();
+</script>
+</body>
+</html>
